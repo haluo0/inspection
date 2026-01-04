@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>巡检系统 - 后台</title>
+  <style>
+    body { font-family: Arial; max-width: 800px; margin: 20px auto; }
+    input, button, textarea { padding: 8px; margin: 5px 0; }
+    #qrCode { margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h2>创建新物品</h2>
+  <input type="text" id="name" placeholder="物品名称" />
+  <input type="text" id="location" placeholder="位置" />
+  <textarea id="checkItems" placeholder="每行一个检查项，如：&#10;设备是否清洁&#10;螺丝是否松动"></textarea>
+  <button onclick="createItem()">生成二维码</button>
+
+  <div id="qrCode"></div>
+
+  <script>
+    async function createItem() {
+      const name = document.getElementById('name').value;
+      const location = document.getElementById('location').value;
+      const checkItemsText = document.getElementById('checkItems').value;
+      const checkItems = checkItemsText.split('\n').map(s => s.trim()).filter(s => s);
+
+      const res = await fetch('/api/items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, location, checkItems })
+      });
+      const data = await res.json();
+
+      if (data.qrCode) {
+        document.getElementById('qrCode').innerHTML = 
+          `<h3>请打印以下二维码并贴到物品上：</h3><img src="${data.qrCode}" width="200" />`;
+      }
+    }
+  </script>
+</body>
+</html>

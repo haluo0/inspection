@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>物品检查</title>
+  <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    .check-item { margin: 10px 0; }
+    canvas { border: 1px solid #ccc; }
+    button { padding: 10px 20px; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <div id="itemInfo"></div>
+  <div id="checkList"></div>
+  
+  <h3>检查人姓名</h3>
+  <input type="text" id="inspectorName" placeholder="请输入姓名" />
+
+  <h3>签字</h3>
+  <canvas id="signatureCanvas" width="400" height="150"></canvas>
+  <br>
+  <button onclick="clearSignature()">清空</button>
+  <button onclick="submitInspection()">提交检查</button>
+
+  <script>
+    let signaturePad;
+    let itemId;
+    const urlParams = new URLSearchParams(window.location.search);
+    itemId = urlParams.get('id');
+
+    // 初始化签名板
+    const canvas = document.getElementById('signatureCanvas');
+    signaturePad = new SignaturePad(canvas);
+
+    // 获取物品信息
+    fetch(`/api/items/${itemId}`)
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('itemInfo').innerHTML = 
+          `<h2>${data.item.name}</h2><p>位置: ${data.item.location}</p>`;
+        
+        let html = '<h3>检查项</h3>';
+        data.checkItems.forEach(item => {
+          html += `
+            <div class="check-item">
+              <label>
+                <input type="checkbox" data-id="${item.id}"> ${item.title}
+              </label>
+            </div>`;
+        });
+        document.getElementById('checkList').innerHTML = html;
+      });
+
+    function clearSignature() {
+      signaturePad.clear();
+    }
+
+    async function submitInspection() {
+      const inspector = document.getElementById('inspectorName').value;
+      if (!inspector) return alert('请输入检查人姓名');
+
+      const checkboxes = document.querySelectorAll('#checkList input[type=checkbox]');
+      const answers = {};
+      checkboxes.forEach(cb => {
+        answers[cb.dataset.id] = cb.checked;
+      });
+
+      const signatureData = signaturePad.toDataURL(); // base64
+
+      await fetch('/api/inspections', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          item_id: itemId,
+          inspector_name: inspector,
+          signature_data: signatureData,
+          answers: answers
+        })
+      });
+
+      alert('提交成功！');
+      window.close(); // 或跳转
+    }
+  </script>
+</body>
+</html>
