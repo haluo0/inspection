@@ -31,7 +31,7 @@
         body: JSON.stringify({ name, location, checkItems })
       });
       const data = await res.json();
-
+//
       if (data.qrCode) {
         document.getElementById('qrCode').innerHTML = 
           `<h3>请打印以下二维码并贴到物品上：</h3><img src="${data.qrCode}" width="200" />`;
